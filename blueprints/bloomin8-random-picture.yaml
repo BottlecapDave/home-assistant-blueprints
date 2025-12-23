@@ -1,0 +1,79 @@
+blueprint:
+  name: Bloomin8 - Random Picture
+  description: Automatically changes the picture when the frame comes online
+  domain: automation
+  author: BottlecapDave
+  input:
+    target_frame_entity:
+      name: Target Frame
+      description: The frame to target
+      selector:
+        entity:
+          filter:
+          - domain:
+            - media_player
+    target_frame_device_tracker_entity:
+      name: Target Frame device tracker
+      description: The target frames device tracker
+      selector:
+        entity:
+          filter:
+          - domain:
+            - device_tracker
+    album_media_source:
+      name: Album media source
+      description: The album media source to randomly get a picture from
+      selector:
+        template:
+    additional_conditions:
+      name: Additional conditions
+      description: |
+        Extra conditions you may want to add to this automation 
+        (Example: Working)
+      default: []
+      selector:
+        condition:
+    min_hours_between_triggers:
+      name: Minimum hours between triggers
+      description: Minimum number of hours between picture changes
+      default: 20
+      selector:
+        number:
+          min: 0
+          max: 72
+          step: 1
+trigger_variables:
+  target_frame_entity: !input target_frame_entity
+  target_frame_device_tracker_entity: !input target_frame_device_tracker_entity
+  album_media_source: !input album_media_source
+  min_hours_between_triggers: !input min_hours_between_triggers
+mode: queued
+triggers:
+- trigger: state
+  entity_id: !input target_frame_device_tracker_entity
+  to: 'home'
+conditions:
+- condition: template
+  value_template: >
+    {{ (now() - state_attr('this', 'last_triggered')) > timedelta(hours=min_hours_between_triggers) }}
+- and: !input additional_conditions
+actions:
+- action: media_player.browse_media
+  data:
+    media_content_type: image
+    media_content_id: >
+      {{ album_media_source }}
+  target:
+    entity_id: !input target_frame_entity
+  response_variable: response
+- variables:
+    content_id: >
+      {{ (response[target_frame_entity].children | random).media_content_id }}
+- action: media_player.play_media
+  target:
+    entity_id: !input target_frame_entity
+  data:
+    media:
+      media_content_id: >-
+        {{ content_id }}
+      media_content_type: image/jpeg
