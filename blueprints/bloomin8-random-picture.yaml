@@ -14,16 +14,6 @@ blueprint:
             - media_player
           reorder: false
           multiple: false
-    target_frame_device_tracker_entity:
-      name: Target Frame device tracker
-      description: The device tracker that determines the picture frame has come online
-      selector:
-        entity:
-          filter:
-          - domain:
-            - device_tracker
-          reorder: false
-          multiple: false
     album_media_source:
       name: Album media source entity
       description: The entity that indicates the album media source to randomly get a picture from. this should return an album media source (e.g. media-source://immich/ce4812db-ee05-41a4-9a66-8dc20efe6d98|albums|6bd88cd0-67ad-46f0-a1cb-af3b4895e5e0). This is an entity so that you can dynamically change the source if needed (e.g. a template sensor).
@@ -50,18 +40,17 @@ blueprint:
           mode: slider
 trigger_variables:
   target_frame_entity: !input target_frame_entity
-  target_frame_device_tracker_entity: !input target_frame_device_tracker_entity
   album_media_source: !input album_media_source
   min_hours_between_triggers: !input min_hours_between_triggers
 mode: queued
 triggers:
 - trigger: state
-  entity_id: !input target_frame_device_tracker_entity
-  to: home
+  entity_id: !input target_frame_entity
+  to: 'on'
 conditions:
 - condition: template
   value_template: >
-    {{ (now() - this.attributes.last_triggered) > timedelta(hours=min_hours_between_triggers) }}
+    {{ this.attributes.last_triggered == none or ((now() - this.attributes.last_triggered) > timedelta(hours=min_hours_between_triggers)) }}
 - and: !input additional_conditions
 actions:
 - action: media_player.browse_media
